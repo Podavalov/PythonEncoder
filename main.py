@@ -27,9 +27,9 @@ if __name__ == "__main__":
         print("Указанная директория не существует.")
         exit(1)
 
-    # Копия создаётся на уровень выше (в родительской папке)
-    parent_dir = os.path.dirname(target)          # родительская папка
-    base_name = os.path.basename(target)          # имя исходной папки
+
+    parent_dir = os.path.dirname(target)
+    base_name = os.path.basename(target)
     copy_dir = os.path.join(parent_dir, base_name + "_obfuscated")
 
     # Если такая уже есть – добавляем номер
@@ -61,14 +61,14 @@ if __name__ == "__main__":
 
     print(f"Уникальных имён для замены: {len(all_names)}")
 
-    # ОТЛАДКА: выведем первые 10 имён, чтобы проверить, есть ли алиасы
+
     print("Примеры имён для замены (первые 10):", list(all_names)[:10])
 
     if not all_names:
         print("Нет имён для замены. Завершение.")
         exit(0)
 
-    rename_dict = cr(all_names, name_length=10)
+    rename_dict = cr(all_names, name_length=15)
     print(f"Сгенерировано {len(rename_dict)} пар замен.")
 
     # Применяем замены

@@ -48,18 +48,16 @@ def get_names_from_script(filename):
                 if item.optional_vars and isinstance(item.optional_vars, ast.Name):
                     with_vars.add(item.optional_vars.id)
 
-        # ---------- ИСПРАВЛЕННАЯ ОБРАБОТКА ИМПОРТОВ ----------
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                import_aliases.add(alias.name)          # само имя (например, 'os')
+                import_aliases.add(alias.name)
                 if alias.asname:
-                    import_aliases.add(alias.asname)    # алиас (например, 'my_os')
+                    import_aliases.add(alias.asname)
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
-                import_aliases.add(alias.name)          # импортируемый объект (например, 'PLUS')
+                import_aliases.add(alias.name)
                 if alias.asname:
-                    import_aliases.add(alias.asname)    # алиас (например, 'P')
-        # --------------------------------------------------
+                    import_aliases.add(alias.asname)
 
     all_defs = set()
     all_defs.update(variables)
