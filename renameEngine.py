@@ -45,7 +45,6 @@ def rename_identifiers_in_file(filepath, rename_map):
             self.generic_visit(node)
             return node
 
-
         def visit_Import(self, node):
             for alias in node.names:
                 if alias.name in rename_map:

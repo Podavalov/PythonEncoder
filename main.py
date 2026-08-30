@@ -35,9 +35,9 @@ if __name__ == "__main__":
     # Если такая уже есть – добавляем номер
     if os.path.exists(copy_dir):
         i = 1
-        while os.path.exists(os.path.join(parent_dir, f"{base_name}_copy_{i}")):
+        while os.path.exists(os.path.join(parent_dir, f"{base_name}_obfuscated_{i}")):
             i += 1
-        copy_dir = os.path.join(parent_dir, f"{base_name}_copy_{i}")
+        copy_dir = os.path.join(parent_dir, f"{base_name}_obfuscated_{i}")
 
     print(f"Создаю копию директории: {copy_dir}")
     shutil.copytree(target, copy_dir, ignore_dangling_symlinks=True)
@@ -56,19 +56,19 @@ if __name__ == "__main__":
     # Фильтруем встроенные и стандартные
     builtins = set(dir(__builtins__))
     all_names = all_names - builtins
-    common_modules = {'os', 'sys', 're', 'json', 'shutil', 'pathlib', 'random', 'string', 'ast'}
+    common_modules = {'os', 'sys', 're', 'json', 'shutil', 'pathlib', 'random', 'string', 'ast', 'math', 'datetime', 'Path','path','vararg','args','arg','items', 'walk', 'self', 'item','node', 'vararg', 'alias','name','names', 'ExceptHandler' , 'target','asname','length'}
     all_names = all_names - common_modules
 
     print(f"Уникальных имён для замены: {len(all_names)}")
 
 
-    print("Примеры имён для замены (первые 10):", list(all_names)[:10])
+    print("Примеры имён для замены :", list(all_names))
 
     if not all_names:
         print("Нет имён для замены. Завершение.")
         exit(0)
 
-    rename_dict = cr(all_names, name_length=15)
+    rename_dict = cr(all_names, 15)
     print(f"Сгенерировано {len(rename_dict)} пар замен.")
 
     # Применяем замены

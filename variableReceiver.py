@@ -47,7 +47,6 @@ def get_names_from_script(filename):
             for item in node.items:
                 if item.optional_vars and isinstance(item.optional_vars, ast.Name):
                     with_vars.add(item.optional_vars.id)
-
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 import_aliases.add(alias.name)
