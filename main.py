@@ -56,10 +56,14 @@ if __name__ == "__main__":
     # Фильтруем встроенные и стандартные
     builtins = set(dir(__builtins__))
     all_names = all_names - builtins
-    common_modules = {'os', 'sys', 're', 'json', 'shutil', 'pathlib', 'random', 'string', 'ast', 'math', 'datetime',
-                      'Path','path','vararg','args','arg','items', 'walk', 'self', 'item','node', 'vararg', 'alias',
-                      'name', 'ExceptHandler' , 'asname'}
+    with open( 'modulesFilter.txt', 'r', encoding='utf-8') as f:
+        content = f.read()
+        common_modules = set(content.split(','))
 
+    #common_modules = {'os', 'sys', 're', 'json', 'shutil', 'pathlib', 'random', 'string', 'ast', 'math', 'datetime',
+     #                 'Path','path','vararg','args','arg','items', 'walk', 'self', 'item','node', 'vararg', 'alias',
+      #                'name', 'ExceptHandler' , 'asname'}
+    print (common_modules)
     all_names = all_names - common_modules
 
     print(f"Уникальных имён для замены: {len(all_names)}")
