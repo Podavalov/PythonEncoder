@@ -1,7 +1,7 @@
 import random
 import string
 
-def generate_random_name(length=10):
+def generate_random_name(length):
     first_char = random.choice(string.ascii_letters)
     other_chars = ''.join(random.choices(string.ascii_letters + string.digits, k=length-1))
     return first_char + other_chars

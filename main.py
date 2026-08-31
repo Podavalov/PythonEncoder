@@ -3,7 +3,7 @@ import shutil
 from fileCollector import collect_py_files as coll
 from variableReceiver import get_names_from_script as get_names
 from randomNameGenerator import create_rename_mapping as cr
-from renameEngine import rename_identifiers_in_file
+from renameEngine import rename_identifiers_in_file as ren
 
 def extract_all_names(data_dict):
     if 'all_definitions' in data_dict:
@@ -56,19 +56,14 @@ if __name__ == "__main__":
     # Фильтруем встроенные и стандартные
     builtins = set(dir(__builtins__))
     all_names = all_names - builtins
+
     with open( 'modulesFilter.txt', 'r', encoding='utf-8') as f:
         content = f.read()
         common_modules = set(content.split(','))
 
-    #common_modules = {'os', 'sys', 're', 'json', 'shutil', 'pathlib', 'random', 'string', 'ast', 'math', 'datetime',
-     #                 'Path','path','vararg','args','arg','items', 'walk', 'self', 'item','node', 'vararg', 'alias',
-      #                'name', 'ExceptHandler' , 'asname'}
-    print (common_modules)
     all_names = all_names - common_modules
 
     print(f"Уникальных имён для замены: {len(all_names)}")
-
-
     print("Примеры имён для замены :", list(all_names))
 
     if not all_names:
@@ -81,7 +76,7 @@ if __name__ == "__main__":
     # Применяем замены
     for file in py_files:
         print(f"  Обработка: {file}")
-        success = rename_identifiers_in_file(file, rename_dict)
+        success = ren(file, rename_dict)
         if success:
             print("    ✓ Замены выполнены")
         else:
