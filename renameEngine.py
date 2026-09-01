@@ -1,5 +1,5 @@
 import ast
-import re
+import struct
 
 
 def rename_identifiers_in_file(filepath, rename_map):
@@ -66,23 +66,111 @@ def rename_identifiers_in_file(filepath, rename_map):
             return node
 
         def visit_Num(self, node):
-            # Заменяем числа на их бинарное представление
-            if isinstance(node.n, int) and node.n >= 0:
-                binary_str = bin(node.n)[2:]  # убираем '0b'
+            # Обработка чисел через AST
+            if isinstance(node.n, int):
+                if node.n >= 0:
+                    return ast.Call(
+                        func=ast.Name(id='int', ctx=ast.Load()),
+                        args=[ast.Constant(value=f'0b{bin(node.n)[2:]}'), ast.Constant(value=0)],
+                        keywords=[]
+                    )
+                else:
+                    return ast.UnaryOp(
+                        op=ast.USub(),
+                        operand=ast.Call(
+                            func=ast.Name(id='int', ctx=ast.Load()),
+                            args=[ast.Constant(value=f'0b{bin(abs(node.n))[2:]}'), ast.Constant(value=0)],
+                            keywords=[]
+                        )
+                    )
+            elif isinstance(node.n, float):
+                # Преобразуем float в бинарное представление через struct
+                packed = struct.pack('>d', node.n)
+                bits = int.from_bytes(packed, byteorder='big')
+                hex_str = hex(bits)[2:].zfill(16)
+
+                # Проверяем, есть ли импорт struct
+                # Добавим его позже, если необходимо
                 return ast.Call(
-                    func=ast.Name(id='int', ctx=ast.Load()),
-                    args=[ast.Constant(value=f'0b{binary_str}'), ast.Constant(value=0)],
+                    func=ast.Attribute(
+                        value=ast.Call(
+                            func=ast.Attribute(
+                                value=ast.Name(id='struct', ctx=ast.Load()),
+                                attr='unpack',
+                                ctx=ast.Load()
+                            ),
+                            args=[
+                                ast.Constant(value='>d'),
+                                ast.Call(
+                                    func=ast.Attribute(
+                                        value=ast.Name(id='bytes', ctx=ast.Load()),
+                                        attr='fromhex',
+                                        ctx=ast.Load()
+                                    ),
+                                    args=[ast.Constant(value=hex_str)],
+                                    keywords=[]
+                                )
+                            ],
+                            keywords=[]
+                        ),
+                        attr='__getitem__',
+                        ctx=ast.Load()
+                    ),
+                    args=[ast.Constant(value=0)],
                     keywords=[]
                 )
             return node
 
         def visit_Constant(self, node):
-            # Для Python 3.8+ числа хранятся в Constant
-            if isinstance(node.value, int) and node.value >= 0:
-                binary_str = bin(node.value)[2:]
+            # Для Python 3.8+
+            if isinstance(node.value, int):
+                if node.value >= 0:
+                    return ast.Call(
+                        func=ast.Name(id='int', ctx=ast.Load()),
+                        args=[ast.Constant(value=f'0b{bin(node.value)[2:]}'), ast.Constant(value=0)],
+                        keywords=[]
+                    )
+                else:
+                    return ast.UnaryOp(
+                        op=ast.USub(),
+                        operand=ast.Call(
+                            func=ast.Name(id='int', ctx=ast.Load()),
+                            args=[ast.Constant(value=f'0b{bin(abs(node.value))[2:]}'), ast.Constant(value=0)],
+                            keywords=[]
+                        )
+                    )
+            elif isinstance(node.value, float):
+                # Преобразуем float в бинарное представление через struct
+                packed = struct.pack('>d', node.value)
+                bits = int.from_bytes(packed, byteorder='big')
+                hex_str = hex(bits)[2:].zfill(16)
+
                 return ast.Call(
-                    func=ast.Name(id='int', ctx=ast.Load()),
-                    args=[ast.Constant(value=f'0b{binary_str}'), ast.Constant(value=0)],
+                    func=ast.Attribute(
+                        value=ast.Call(
+                            func=ast.Attribute(
+                                value=ast.Name(id='struct', ctx=ast.Load()),
+                                attr='unpack',
+                                ctx=ast.Load()
+                            ),
+                            args=[
+                                ast.Constant(value='>d'),
+                                ast.Call(
+                                    func=ast.Attribute(
+                                        value=ast.Name(id='bytes', ctx=ast.Load()),
+                                        attr='fromhex',
+                                        ctx=ast.Load()
+                                    ),
+                                    args=[ast.Constant(value=hex_str)],
+                                    keywords=[]
+                                )
+                            ],
+                            keywords=[]
+                        ),
+                        attr='__getitem__',
+                        ctx=ast.Load()
+                    ),
+                    args=[ast.Constant(value=0)],
                     keywords=[]
                 )
             return node
@@ -90,36 +178,39 @@ def rename_identifiers_in_file(filepath, rename_map):
     new_tree = RenameTransformer().visit(tree)
     ast.fix_missing_locations(new_tree)
 
+    # Добавляем импорт struct, если есть float числа и он еще не импортирован
+    has_struct_import = False
+    has_float_numbers = False
+
+    for node in ast.walk(new_tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == 'struct':
+                    has_struct_import = True
+        elif isinstance(node, ast.ImportFrom):
+            if node.module == 'struct':
+                has_struct_import = True
+        elif isinstance(node, ast.Call):
+            # Проверяем, есть ли вызов struct.unpack
+            if isinstance(node.func, ast.Attribute):
+                if isinstance(node.func.value, ast.Name) and node.func.value.id == 'struct':
+                    has_float_numbers = True
+                elif isinstance(node.func.value, ast.Call):
+                    if isinstance(node.func.value.func, ast.Attribute):
+                        if isinstance(node.func.value.func.value,
+                                      ast.Name) and node.func.value.func.value.id == 'struct':
+                            has_float_numbers = True
+
+    if has_float_numbers and not has_struct_import:
+        import_node = ast.Import(names=[ast.alias(name='struct', asname=None)])
+        if isinstance(new_tree, ast.Module):
+            new_tree.body.insert(0, import_node)
+
     try:
         new_source = ast.unparse(new_tree)
     except AttributeError:
         print(f"  Ошибка: ast.unparse недоступен. Требуется Python 3.9+.")
         return False
-
-    # Дополнительная обработка для чисел в строковом виде (например, в f-строках)
-    # Это нужно, потому что ast не всегда корректно обрабатывает числа в сложных выражениях
-    def replace_numbers_in_code(code):
-        # Заменяем числа, которые не являются частью других чисел или идентификаторов
-        # Используем lookbehind/lookahead, чтобы не заменять числа в словах
-        pattern = r'(?<![a-zA-Z0-9_])-?\d+(?![a-zA-Z0-9_])'
-
-        def replace_match(match):
-            num_str = match.group(0)
-            if num_str.startswith('-'):
-                # Отрицательные числа оставляем как есть или можно обработать отдельно
-                return num_str
-            try:
-                num = int(num_str)
-                if num >= 0:
-                    return f"int('0b{bin(num)[2:]}', 0)"
-                return num_str
-            except ValueError:
-                return num_str
-
-        return re.sub(pattern, replace_match, code)
-
-    # Применяем дополнительную обработку
-    new_source = replace_numbers_in_code(new_source)
 
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(new_source)
