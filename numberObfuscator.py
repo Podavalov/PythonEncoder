@@ -1,7 +1,5 @@
 import ast
-import re
 import struct
-import decimal
 from decimal import Decimal
 
 
