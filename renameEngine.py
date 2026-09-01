@@ -1,4 +1,6 @@
 import ast
+import re
+
 
 def rename_identifiers_in_file(filepath, rename_map):
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -63,6 +65,28 @@ def rename_identifiers_in_file(filepath, rename_map):
             self.generic_visit(node)
             return node
 
+        def visit_Num(self, node):
+            # Заменяем числа на их бинарное представление
+            if isinstance(node.n, int) and node.n >= 0:
+                binary_str = bin(node.n)[2:]  # убираем '0b'
+                return ast.Call(
+                    func=ast.Name(id='int', ctx=ast.Load()),
+                    args=[ast.Constant(value=f'0b{binary_str}'), ast.Constant(value=0)],
+                    keywords=[]
+                )
+            return node
+
+        def visit_Constant(self, node):
+            # Для Python 3.8+ числа хранятся в Constant
+            if isinstance(node.value, int) and node.value >= 0:
+                binary_str = bin(node.value)[2:]
+                return ast.Call(
+                    func=ast.Name(id='int', ctx=ast.Load()),
+                    args=[ast.Constant(value=f'0b{binary_str}'), ast.Constant(value=0)],
+                    keywords=[]
+                )
+            return node
+
     new_tree = RenameTransformer().visit(tree)
     ast.fix_missing_locations(new_tree)
 
@@ -71,6 +95,31 @@ def rename_identifiers_in_file(filepath, rename_map):
     except AttributeError:
         print(f"  Ошибка: ast.unparse недоступен. Требуется Python 3.9+.")
         return False
+
+    # Дополнительная обработка для чисел в строковом виде (например, в f-строках)
+    # Это нужно, потому что ast не всегда корректно обрабатывает числа в сложных выражениях
+    def replace_numbers_in_code(code):
+        # Заменяем числа, которые не являются частью других чисел или идентификаторов
+        # Используем lookbehind/lookahead, чтобы не заменять числа в словах
+        pattern = r'(?<![a-zA-Z0-9_])-?\d+(?![a-zA-Z0-9_])'
+
+        def replace_match(match):
+            num_str = match.group(0)
+            if num_str.startswith('-'):
+                # Отрицательные числа оставляем как есть или можно обработать отдельно
+                return num_str
+            try:
+                num = int(num_str)
+                if num >= 0:
+                    return f"int('0b{bin(num)[2:]}', 0)"
+                return num_str
+            except ValueError:
+                return num_str
+
+        return re.sub(pattern, replace_match, code)
+
+    # Применяем дополнительную обработку
+    new_source = replace_numbers_in_code(new_source)
 
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(new_source)

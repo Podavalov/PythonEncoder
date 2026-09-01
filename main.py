@@ -4,6 +4,7 @@ from fileCollector import collect_py_files as coll
 from variableReceiver import get_names_from_script as get_names
 from randomNameGenerator import create_rename_mapping as cr
 from renameEngine import rename_identifiers_in_file as ren
+from numberObfuscator import obfuscate_numbers_in_file
 
 def extract_all_names(data_dict):
     if 'all_definitions' in data_dict:
@@ -26,7 +27,6 @@ if __name__ == "__main__":
     if not os.path.isdir(target):
         print("Указанная директория не существует.")
         exit(1)
-
 
     parent_dir = os.path.dirname(target)
     base_name = os.path.basename(target)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     all_names = all_names - common_modules
 
     print(f"Уникальных имён для замены: {len(all_names)}")
-    print("Примеры имён для замены :", list(all_names))
+    print("Примеры имён для замены :", list(all_names)[:10])
 
     if not all_names:
         print("Нет имён для замены. Завершение.")
@@ -73,7 +73,8 @@ if __name__ == "__main__":
     rename_dict = cr(all_names, 15)
     print(f"Сгенерировано {len(rename_dict)} пар замен.")
 
-    # Применяем замены
+    # Применяем замены идентификаторов
+    print("\nОбработка замены идентификаторов:")
     for file in py_files:
         print(f"  Обработка: {file}")
         success = ren(file, rename_dict)
@@ -81,6 +82,16 @@ if __name__ == "__main__":
             print("    ✓ Замены выполнены")
         else:
             print("    ✗ Ошибка (синтаксическая)")
+
+    # Применяем обфускацию чисел
+    print("\nОбработка обфускации чисел:")
+    for file in py_files:
+        print(f"  Обработка чисел в: {file}")
+        success = obfuscate_numbers_in_file(file)
+        if success:
+            print("    ✓ Числа заменены на бинарный вид")
+        else:
+            print("    ✗ Ошибка при обработке чисел")
 
     print("\nГотово! Все изменения применены к копии директории:")
     print(copy_dir)
