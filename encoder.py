@@ -76,7 +76,7 @@ def protect(input_path, output_path, key, machine, expire_days):
 
     key_hex = key_bytes.hex()
 
-    # Новый шаблон: экспорт глобальных имён, вызов _load() при импорте
+    # Обновлённый шаблон с поддержкой импортов
     loader_template = string.Template('''# PythonEncoder generated file. Do not edit manually.
 import sys, base64, hashlib, time, os, platform, uuid
 
@@ -142,12 +142,41 @@ def _load():
         print("PythonEncoder: ошибка: не удалось расшифровать код (возможно, повреждён ключ)")
         sys.exit(1)
 
+    # Создаём пространство имён с необходимыми переменными
     ns = {}
-    exec(compile(code, "<PythonEncoder>", "exec"), ns)
 
-    # Копируем все глобальные имена из ns в текущий модуль (кроме служебных)
+    # Добавляем стандартные переменные модуля
+    ns['__name__'] = __name__
+    ns['__file__'] = __file__
+    ns['__package__'] = __package__
+    ns['__doc__'] = __doc__
+    ns['__builtins__'] = __builtins__
+
+    # Добавляем sys и os для поддержки импортов
+    ns['sys'] = sys
+    ns['os'] = os
+
+    # Копируем глобальные переменные из вызывающего модуля
+    # (это важно для корректных относительных импортов)
+    try:
+        caller_globals = sys._getframe(1).f_globals
+        for key in ['__name__', '__package__', '__file__', '__doc__', '__path__']:
+            if key in caller_globals:
+                ns[key] = caller_globals[key]
+    except:
+        pass
+
+    try:
+        exec(compile(code, "<PythonEncoder>", "exec"), ns)
+    except Exception as e:
+        print(f"PythonEncoder: ошибка при выполнении кода: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+    # Экспортируем все имена (кроме служебных) в текущий модуль
     for k, v in ns.items():
-        if not k.startswith("__"):   # не копируем магические имена
+        if not k.startswith("__") or k in ["__name__", "__file__", "__package__", "__path__"]:
             globals()[k] = v
 
 
