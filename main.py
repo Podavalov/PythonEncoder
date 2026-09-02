@@ -57,7 +57,7 @@ if __name__ == "__main__":
     builtins = set(dir(__builtins__))
     all_names = all_names - builtins
 
-    with open( 'modulesFilter.txt', 'r', encoding='utf-8') as f:
+    with open('modulesFilter.txt', 'r', encoding='utf-8') as f:
         content = f.read()
         common_modules = set(content.split(','))
 
@@ -65,6 +65,13 @@ if __name__ == "__main__":
 
     print(f"Уникальных имён для замены: {len(all_names)}")
     print("Примеры имён для замены :", list(all_names)[:10])
+
+    # with open('output_file', 'w', encoding='utf-8') as f:
+    #     if isinstance(all_names, list):
+    #         for item in all_names:
+    #             f.write(str(item))
+    #     else:
+    #         f.write(str(all_names))
 
     if not all_names:
         print("Нет имён для замены. Завершение.")
