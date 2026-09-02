@@ -1,10 +1,5 @@
-Ниже — простой и понятный `README` для программы из прошлого ответа. Можно сохранить как файл `README.md`.
-
----
-
-# Mini Guard
-
-**Mini Guard** — простая учебная программа для базовой защиты Python-скриптов.
+## PythonEncoder
+__**PythonEncoder** — простая учебная программа для базовой защиты Python-скриптов.__
 
 Она умеет:
 
@@ -13,12 +8,10 @@
 - показывать код машины
 - привязывать скрипт к конкретной машине
 - ограничивать срок действия
-- работать как мини-аналог базовой защиты Python-кода
 
-> Важно: это учебная и простая реализация, а не полноценный промышленный аналог PyArmor.
+
 
 ---
-
 ## Возможности
 
 | Функция | Поддержка |
@@ -28,9 +21,7 @@
 | Привязка к машине | Да |
 | Срок действия | Да |
 | Ключ защиты | Да, упрощенный |
-| Полная VM-защита | Нет |
-| Продакшен-лицензирование | Нет |
-| Антиотладка | Нет |
+
 
 ---
 
@@ -48,39 +39,7 @@ Python 3.8+
 
 ---
 
-## Быстрый старт
 
-Создадим простой скрипт:
-
-```bash
-echo 'print("Привет, мир!")' > app.py
-```
-
-Защитим его:
-
-```bash
-python mini_guard.py protect app.py
-```
-
-Появится новый файл:
-
-```bash
-app.guarded.py
-```
-
-Запустим:
-
-```bash
-python app.guarded.py
-```
-
-Ожидаемый результат:
-
-```text
-Привет, мир!
-```
-
----
 
 ## Основные команды
 
@@ -89,7 +48,7 @@ python app.guarded.py
 Показать код текущей машины.
 
 ```bash
-python mini_guard.py machine
+python guard.py machine
 ```
 
 Пример вывода:
@@ -109,19 +68,15 @@ a1b2c3d4e5f60718
 Пример:
 
 ```bash
-python mini_guard.py protect app.py
+python guard.py protect app.py
 ```
 
-Без параметров команда создаст файл:
 
-```bash
-app.guarded.py
-```
 
 Можно указать имя выходного файла:
 
 ```bash
-python mini_guard.py protect app.py -o my_app.guarded.py
+python guard.py protect app.py -o my_app.guarded.py
 ```
 
 ---
@@ -131,7 +86,7 @@ python mini_guard.py protect app.py -o my_app.guarded.py
 Запустить защищенный файл.
 
 ```bash
-python mini_guard.py run app.guarded.py
+python guard.py run app.guarded.py
 ```
 
 Эквивалент:
@@ -151,7 +106,7 @@ python app.guarded.py
 Пример:
 
 ```bash
-python mini_guard.py protect app.py
+python guard.py protect app.py
 ```
 
 ---
@@ -163,7 +118,7 @@ python mini_guard.py protect app.py
 Пример:
 
 ```bash
-python mini_guard.py protect app.py -o output.py
+python guard.py protect app.py -o output.py
 ```
 
 Если параметр не указан, будет создан файл:
@@ -183,14 +138,14 @@ app.guarded.py
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --key my-secret-key
+python guard.py protect app.py --key my-secret-key
 ```
 
 Если защищать несколько файлов с одним и тем же ключом:
 
 ```bash
-python mini_guard.py protect app1.py --key my-secret-key
-python mini_guard.py protect app2.py --key my-secret-key
+python guard.py protect app1.py --key my-secret-key
+python guard.py protect app2.py --key my-secret-key
 ```
 
 ---
@@ -210,19 +165,19 @@ python mini_guard.py protect app2.py --key my-secret-key
 Пример без привязки:
 
 ```bash
-python mini_guard.py protect app.py --machine any
+python guard.py protect app.py --machine any
 ```
 
 Пример привязки к текущей машине:
 
 ```bash
-python mini_guard.py protect app.py --machine auto
+python guard.py protect app.py --machine auto
 ```
 
 Пример привязки к конкретной машине:
 
 ```bash
-python mini_guard.py protect app.py --machine a1b2c3d4e5f60718
+python guard.py protect app.py --machine a1b2c3d4e5f60718
 ```
 
 ---
@@ -234,13 +189,13 @@ python mini_guard.py protect app.py --machine a1b2c3d4e5f60718
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --no-machine
+python guard.py protect app.py --no-machine
 ```
 
 Это то же самое:
 
 ```bash
-python mini_guard.py protect app.py --machine any
+python guard.py protect app.py --machine any
 ```
 
 ---
@@ -252,7 +207,7 @@ python mini_guard.py protect app.py --machine any
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --expire-days 30
+python guard.py protect app.py --expire-days 30
 ```
 
 После 30 дней защищенный файл перестанет запускаться.
@@ -260,7 +215,7 @@ python mini_guard.py protect app.py --expire-days 30
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --expire-days 7
+python guard.py protect app.py --expire-days 7
 ```
 
 Файл будет работать 7 дней.
@@ -268,7 +223,7 @@ python mini_guard.py protect app.py --expire-days 7
 Без срока:
 
 ```bash
-python mini_guard.py protect app.py
+python guard.py protect app.py
 ```
 
 ---
@@ -278,7 +233,7 @@ python mini_guard.py protect app.py
 ### Пример 1. Простая защита
 
 ```bash
-python mini_guard.py protect app.py
+python guard.py protect app.py
 python app.guarded.py
 ```
 
@@ -287,7 +242,7 @@ python app.guarded.py
 ### Пример 2. Защита с именем выходного файла
 
 ```bash
-python mini_guard.py protect app.py -o myapp.py
+python guard.py protect app.py -o myapp.py
 python myapp.py
 ```
 
@@ -296,7 +251,7 @@ python myapp.py
 ### Пример 3. Защита на 30 дней
 
 ```bash
-python mini_guard.py protect app.py --expire-days 30
+python guard.py protect app.py --expire-days 30
 python app.guarded.py
 ```
 
@@ -305,7 +260,7 @@ python app.guarded.py
 ### Пример 4. Защита без привязки к машине
 
 ```bash
-python mini_guard.py protect app.py --no-machine
+python guard.py protect app.py --no-machine
 python app.guarded.py
 ```
 
@@ -318,7 +273,7 @@ python app.guarded.py
 Сначала посмотрим код машины:
 
 ```bash
-python mini_guard.py machine
+python guard.py machine
 ```
 
 Например, получим:
@@ -330,13 +285,13 @@ a1b2c3d4e5f60718
 Защитим файл:
 
 ```bash
-python mini_guard.py protect app.py --machine a1b2c3d4e5f60718
+python guard.py protect app.py --machine a1b2c3d4e5f60718
 ```
 
 Или проще:
 
 ```bash
-python mini_guard.py protect app.py --machine auto
+python guard.py protect app.py --machine auto
 ```
 
 Такой файл будет работать только на этой машине.
@@ -346,7 +301,7 @@ python mini_guard.py protect app.py --machine auto
 ### Пример 6. Защита с ключом и сроком
 
 ```bash
-python mini_guard.py protect app.py --key my-key-123 --expire-days 14
+python guard.py protect app.py --key my-key-123 --expire-days 14
 ```
 
 ---
@@ -354,69 +309,14 @@ python mini_guard.py protect app.py --key my-key-123 --expire-days 14
 ### Пример 7. Запуск через `run`
 
 ```bash
-python mini_guard.py run app.guarded.py
+python guard.py run app.guarded.py
 ```
 
----
 
-## Как это работает?
 
-Очень упрощенно:
 
-1. Программа читает исходный `.py` файл.
-2. Создает ключ.
-3. Шифрует исходник.
-4. Генерирует новый файл-обертку.
-5. При запуске новый файл:
-   - проверяет срок действия,
-   - проверяет привязку к машине,
-   - расшифровывает исходник,
-   - запускает его.
 
----
 
-## Что получится после защиты?
-
-Было:
-
-```bash
-app.py
-```
-
-Стало:
-
-```bash
-app.guarded.py
-```
-
-Или, если указали `-o`:
-
-```bash
-myapp.py
-```
-
-Оригинальный `app.py` при этом не изменяется.
-
----
-
-## Важно знать
-
-### Это не полная защита
-
-Mini Guard подходит для учебных целей и простых задач.
-
-Она не защищает полностью от:
-
-- вытаскивания ключа
-- декомпиляции
-- модификации сгенерированного файла
-- отладки
-- запуску кода в памяти
-- реверс-инжиниринга
-
-Для защиты коммерческого продукта лучше использовать более серьезные решения.
-
----
 
 ## Частые ошибки
 
@@ -425,7 +325,7 @@ Mini Guard подходит для учебных целей и простых �
 Возможный текст:
 
 ```text
-mini-guard: ошибка: срок действия истек
+PythonEncoder: ошибка: срок действия истек
 ```
 
 Причина:
@@ -439,7 +339,7 @@ mini-guard: ошибка: срок действия истек
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --expire-days 30
+python guard.py protect app.py --expire-days 30
 ```
 
 ---
@@ -449,7 +349,7 @@ python mini_guard.py protect app.py --expire-days 30
 Возможный текст:
 
 ```text
-mini-guard: ошибка: скрипт защищен для другой машины
+PythonEncoder: ошибка: скрипт защищен для другой машины
 ```
 
 Причина:
@@ -463,7 +363,7 @@ mini-guard: ошибка: скрипт защищен для другой маш
 Пример:
 
 ```bash
-python mini_guard.py protect app.py --no-machine
+python guard.py protect app.py --no-machine
 ```
 
 ---
@@ -482,103 +382,20 @@ python app.guarded.py
 - файл существует,
 - путь указан правильно.
 
-Пример:
 
-```bash
-cd /path/to/folder
-python app.guarded.py
-```
 
----
 
-## Пример полного цикла
 
-```bash
-# 1. Создаем обычный скрипт
-echo 'print("Hello Mini Guard")' > hello.py
-
-# 2. Смотрим код машины
-python mini_guard.py machine
-
-# 3. Защищаем файл
-python mini_guard.py protect hello.py -o hello.guarded.py --expire-days 30
-
-# 4. Запускаем
-python hello.guarded.py
-```
-
-Результат:
-
-```text
-Hello Mini Guard
-```
-
----
-
-## Команды коротко
-
-```bash
-# Код машины
-python mini_guard.py machine
-
-# Защита
-python mini_guard.py protect app.py
-
-# Защита в конкретный файл
-python mini_guard.py protect app.py -o app.guarded.py
-
-# Защита с ключом
-python mini_guard.py protect app.py --key secret
-
-# Защита на 30 дней
-python mini_guard.py protect app.py --expire-days 30
-
-# Защита без привязки к машине
-python mini_guard.py protect app.py --no-machine
-
-# Привязка к текущей машине
-python mini_guard.py protect app.py --machine auto
-
-# Запуск
-python mini_guard.py run app.guarded.py
-```
-
----
 
 ## Коротко о том, когда что использовать
 
 | Задача | Команда |
 |---|---|
-| Просто защитить файл | `python mini_guard.py protect app.py` |
-| Запустить защищенный файл | `python mini_guard.py run app.guarded.py` |
-| Узнать код машины | `python mini_guard.py machine` |
-| Сделать портативную защиту | `python mini_guard.py protect app.py --no-machine` |
-| Привязать к машине | `python mini_guard.py protect app.py --machine auto` |
-| Ограничить срок | `python mini_guard.py protect app.py --expire-days 30` |
+| Просто защитить файл | `python guard.py protect app.py` |
+| Запустить защищенный файл | `python guard.py run app.guarded.py` |
+| Узнать код машины | `python guard.py machine` |
+| Сделать портативную защиту | `python guard.py protect app.py --no-machine` |
+| Привязать к машине | `python guard.py protect app.py --machine auto` |
+| Ограничить срок | `python guard.py protect app.py --expire-days 30` |
 
 ---
-
-## Ограничения
-
-Mini Guard **не является**:
-
-- полноценной VM-защитой,
-- системой лицензирования,
-- продакшен-инструментом,
-- заменой PyArmor/Nuitka/ComPyler,
-- защитой от квалифицированного взлома.
-
-Она подходит, если нужно:
-
-- защитить учебный скрипт,
-- сделать простую заготовку,
-- понять, как работает базовая защита Python-кода,
-- создать собственный инструмент дальше.
-
----
-
-## Лицензия
-
-Для учебных целей.
-
-Перед использованием в коммерческом проекте проверьте юридическую сторону и назначение инструмента.
