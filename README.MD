@@ -33,9 +33,12 @@ PythonEncoder — инструмент для защиты Python-скрипто
 
 ```bash
 python encoder.py [команда] [аргументы]
+````
+Или 
+```bash
 python main.py [аргументы]
 ```
-    Если Python у вас установлен как python3, замените python на python3.
+Если Python у вас установлен как python3, замените python на python3.
 
 Использование
 1. Показать код текущей машины
