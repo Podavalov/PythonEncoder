@@ -2,9 +2,6 @@ from pathlib import Path
 
 # Список файлов и шаблонов, которые НЕ будут шифроваться
 EXCLUDED_PATTERNS = [
-    'encoder.py',
-    'main.py',
-    'fileCollector.py',
     'setup.py',
     'settings.py',
     '__init__.py',
