@@ -130,7 +130,6 @@ def _check(machine):
 
 
 def _load():
-    """Расшифровывает и выполняет оригинальный код, затем экспортирует все имена."""
     m = _machine_code()
     _check(m)
 
@@ -142,22 +141,17 @@ def _load():
         print("PythonEncoder: ошибка: не удалось расшифровать код (возможно, повреждён ключ)")
         sys.exit(1)
 
-    # Создаём пространство имён с необходимыми переменными
     ns = {}
 
-    # Добавляем стандартные переменные модуля
     ns['__name__'] = __name__
     ns['__file__'] = __file__
     ns['__package__'] = __package__
     ns['__doc__'] = __doc__
     ns['__builtins__'] = __builtins__
 
-    # Добавляем sys и os для поддержки импортов
     ns['sys'] = sys
     ns['os'] = os
 
-    # Копируем глобальные переменные из вызывающего модуля
-    # (это важно для корректных относительных импортов)
     try:
         caller_globals = sys._getframe(1).f_globals
         for key in ['__name__', '__package__', '__file__', '__doc__', '__path__']:
@@ -174,13 +168,11 @@ def _load():
         traceback.print_exc()
         sys.exit(1)
 
-    # Экспортируем все имена (кроме служебных) в текущий модуль
     for k, v in ns.items():
         if not k.startswith("__") or k in ["__name__", "__file__", "__package__", "__path__"]:
             globals()[k] = v
 
 
-# Выполняем загрузку при импорте или запуске
 _load()
 ''')
 
