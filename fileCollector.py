@@ -37,6 +37,10 @@ EXCLUDED_PATTERNS = [
     'celery.py',
     'celery_app.py',
     'tasks.py',
+    '.venv/*.py',
+    'venv/*.py',
+    'env/*.py',
+    '.env/*.py'
 
 ]
 
