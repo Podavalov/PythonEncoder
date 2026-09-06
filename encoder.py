@@ -42,7 +42,14 @@ def protect(input_path, output_path, key, machine, expire_days):
 
     if key is None:
         key = secrets.token_hex(32)
-    key_bytes = key.encode("utf-8")
+
+    # Приводим к hex-байтам, как в загрузчике
+    try:
+        key_bytes = bytes.fromhex(key)
+    except ValueError:
+        # Если ключ не hex, преобразуем через sha256
+        key = hashlib.sha256(key.encode()).hexdigest()
+        key_bytes = bytes.fromhex(key)
 
     if machine is None or machine.lower() == "any":
         machine = "any"
@@ -74,17 +81,35 @@ def protect(input_path, output_path, key, machine, expire_days):
     payload_enc = xor(source.encode("utf-8"), dk)
     payload_b64 = b64(payload_enc)
 
-    key_hex = key_bytes.hex()
-
-    # Обновлённый шаблон с поддержкой импортов
+    # Шаблон загрузчика (с поддержкой .key и проверкой hex)
     loader_template = string.Template('''# PythonEncoder generated file. Do not edit manually.
 import sys, base64, hashlib, time, os, platform, uuid
 
 _MAGIC = $magic
-_KEY_HEX = $key_hex
 _EXPIRE = $expire
 _META_B64 = $meta_b64
 _PAYLOAD_B64 = $payload_b64
+
+
+def _read_key():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    current = script_dir
+    while True:
+        key_path = os.path.join(current, '.key')
+        if os.path.isfile(key_path):
+            with open(key_path, 'r') as f:
+                key = f.read().strip()
+                # Проверяем, что это hex-строка
+                if len(key) != 64 or not all(c in '0123456789abcdef' for c in key.lower()):
+                    print("PythonEncoder: ошибка: ключ в .key должен быть 64-символьной hex-строкой")
+                    sys.exit(1)
+                return key
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    print("PythonEncoder: ошибка: не найден файл .key")
+    sys.exit(1)
 
 
 def _xor(d, k):
@@ -92,7 +117,11 @@ def _xor(d, k):
 
 
 def _derive_key(key_hex):
-    key = bytes.fromhex(key_hex)
+    try:
+        key = bytes.fromhex(key_hex)
+    except ValueError:
+        print("PythonEncoder: ошибка: неверный формат ключа (ожидается hex)")
+        sys.exit(1)
     h = hashlib.sha256(_MAGIC + key + b"|payload").digest()
     return h * 2
 
@@ -107,14 +136,12 @@ def _machine_code():
 
 
 def _check(machine):
-    dk = _derive_key(_KEY_HEX)
+    dk = _derive_key(_read_key())
     try:
         raw_meta = _xor(base64.b64decode(_META_B64), dk)
         meta = raw_meta.decode("utf-8")
     except UnicodeDecodeError:
         print("PythonEncoder: ошибка: не удалось расшифровать метаданные (возможно, повреждён ключ)")
-        print(f"    KEY_HEX = {_KEY_HEX}")
-        print(f"    META_B64 = {_META_B64}")
         sys.exit(1)
 
     exp_str, bound = meta.split("|")
@@ -133,7 +160,7 @@ def _load():
     m = _machine_code()
     _check(m)
 
-    dk = _derive_key(_KEY_HEX)
+    dk = _derive_key(_read_key())
     try:
         raw_code = _xor(base64.b64decode(_PAYLOAD_B64), dk)
         code = raw_code.decode("utf-8")
@@ -178,7 +205,6 @@ _load()
 
     loader = loader_template.substitute(
         magic=repr(MAGIC),
-        key_hex=repr(key_hex),
         expire=expire_ts,
         meta_b64=repr(meta_b64),
         payload_b64=repr(payload_b64)
@@ -189,12 +215,7 @@ _load()
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=(
-            "PythonEncoder: "
-            "защита/привязка/срок действия Python-скрипта"
-        )
-    )
+    parser = argparse.ArgumentParser(description="PythonEncoder: защита/привязка/срок действия Python-скрипта")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("machine", help="Показать код машины")
@@ -202,24 +223,10 @@ def main():
     p_protect = sub.add_parser("protect", help="Защитить .py файл")
     p_protect.add_argument("input", help="Исходный .py файл")
     p_protect.add_argument("-o", "--output", help="Имя выходного файла")
-    p_protect.add_argument(
-        "--key",
-        help="Ключ. Если не указать, будет создан и вшит в файл"
-    )
-    p_protect.add_argument(
-        "--machine",
-        help="any, auto или код машины"
-    )
-    p_protect.add_argument(
-        "--no-machine",
-        action="store_true",
-        help="Не привязывать к машине"
-    )
-    p_protect.add_argument(
-        "--expire-days",
-        type=int,
-        help="Срок действия в днях"
-    )
+    p_protect.add_argument("--key", help="Ключ (hex-строка). Если не указать, будет создан")
+    p_protect.add_argument("--machine", help="any, auto или код машины")
+    p_protect.add_argument("--no-machine", action="store_true", help="Не привязывать к машине")
+    p_protect.add_argument("--expire-days", type=int, help="Срок действия в днях")
 
     p_run = sub.add_parser("run", help="Запустить защищённый файл")
     p_run.add_argument("script")
@@ -232,13 +239,7 @@ def main():
     elif args.command == "protect":
         machine = "any" if args.no_machine else (args.machine or "any")
         out = args.output or args.input
-        protect(
-            args.input,
-            out,
-            args.key,
-            machine,
-            args.expire_days
-        )
+        protect(args.input, out, args.key, machine, args.expire_days)
         print("Готово:", out)
 
     elif args.command == "run":

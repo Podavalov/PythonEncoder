@@ -3,6 +3,7 @@ import shutil
 import argparse
 import secrets
 import sys
+import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from fileCollector import collect_py_files as coll, EXCLUDED_PATTERNS, add_exclusion
@@ -10,15 +11,6 @@ from encoder import protect, machine_code
 
 
 def get_user_input(prompt, default=None, required=False, validator=None):
-    """
-    Вспомогательная функция для интерактивного ввода с валидацией.
-
-    Args:
-        prompt: Текст подсказки
-        default: Значение по умолчанию
-        required: Обязательно ли вводить значение
-        validator: Функция-валидатор, возвращает (bool, сообщение об ошибке)
-    """
     while True:
         if default is not None:
             full_prompt = f"{prompt} (по умолчанию: {default}): "
@@ -42,17 +34,15 @@ def get_user_input(prompt, default=None, required=False, validator=None):
         return value
 
 
-def validate_key(key):
-    """Проверка ключа."""
-    if key == "":
+def validate_key_hex(key):
+    """Проверка, что ключ — 64-символьная hex-строка."""
+    if len(key) == 64 and all(c in '0123456789abcdef' for c in key.lower()):
         return True, "OK"
-    if len(key) < 8:
-        return False, "Ключ должен быть минимум 8 символов"
-    return True, "OK"
+    # Если ключ другой, преобразуем в hex через sha256 (даём предупреждение)
+    return False, "Ключ должен быть 64-символьной hex-строкой. Используйте secrets.token_hex(32) для генерации."
 
 
 def validate_days(days_str):
-    """Проверка срока действия."""
     try:
         days = int(days_str)
         if days < 0:
@@ -63,7 +53,6 @@ def validate_days(days_str):
 
 
 def validate_machine(machine):
-    """Проверка привязки к машине."""
     if machine.lower() in ['any', 'auto']:
         return True, "OK"
     if len(machine) == 16 and all(c in '0123456789abcdef' for c in machine.lower()):
@@ -72,7 +61,6 @@ def validate_machine(machine):
 
 
 def choose_interactive_mode():
-    """Интерактивный выбор режима работы."""
     print("\n" + "=" * 60)
     print("🔐 PythonEncoder - Пакетная защита")
     print("=" * 60)
@@ -92,24 +80,23 @@ def choose_interactive_mode():
 
 
 def interactive_advanced_config():
-    """Продвинутая интерактивная настройка."""
     print("\n" + "=" * 60)
     print("⚙️  Продвинутая настройка")
     print("=" * 60)
 
     # 1. Ключ
     print("\n🔑 Настройка ключа:")
-    print("  [1] Сгенерировать случайный ключ")
-    print("  [2] Ввести свой ключ")
+    print("  [1] Сгенерировать случайный ключ (hex)")
+    print("  [2] Ввести свой ключ (должен быть 64 hex-символа)")
     key_choice = get_user_input("Выберите вариант", default="1")
 
     if key_choice == "2":
         key = get_user_input(
-            "Введите ключ (минимум 8 символов)",
+            "Введите hex-ключ (64 символа)",
             required=True,
-            validator=validate_key
+            validator=validate_key_hex
         )
-        print(f"✅ Использую ключ: {key[:4]}...{key[-4:]}")
+        print(f"✅ Использую ключ: {key[:8]}...{key[-8:]}")
     else:
         key = secrets.token_hex(32)
         print(f"✅ Сгенерирован случайный ключ: {key}")
@@ -198,7 +185,6 @@ def interactive_advanced_config():
 
 
 def print_summary(config):
-    """Печать сводки настроек."""
     print("\n" + "=" * 60)
     print("📋 Сводка настроек")
     print("=" * 60)
@@ -221,55 +207,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Пакетная защита Python-файлов в директории с помощью PythonEncoder."
     )
-    parser.add_argument(
-        "directory",
-        nargs="?",
-        help="Путь к директории с исходными .py файлами"
-    )
-    parser.add_argument(
-        "--key",
-        help="Общий ключ для всех файлов (если не указан, будет сгенерирован)"
-    )
-    parser.add_argument(
-        "--machine",
-        default=None,
-        help="Привязка к машине: any, auto или код машины"
-    )
-    parser.add_argument(
-        "--expire-days",
-        type=int,
-        default=None,
-        help="Срок действия в днях (0 — бессрочно)"
-    )
-    parser.add_argument(
-        "--no-machine",
-        action="store_true",
-        help="Отключить привязку к машине (то же, что --machine any)"
-    )
-    parser.add_argument(
-        "--exclude",
-        action="append",
-        help="Дополнительные файлы/шаблоны для исключения"
-    )
-    parser.add_argument(
-        "--show-excluded",
-        action="store_true",
-        help="Показать список исключаемых файлов"
-    )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Запросить параметры интерактивно"
-    )
-    parser.add_argument(
-        "--quick",
-        action="store_true",
-        help="Быстрый режим: сгенерировать ключ, без привязки, бессрочно"
-    )
+    parser.add_argument("directory", nargs="?", help="Путь к директории с исходными .py файлами")
+    parser.add_argument("--key", help="Общий ключ для всех файлов (должен быть 64-символьной hex-строкой)")
+    parser.add_argument("--machine", default=None, help="Привязка к машине: any, auto или код машины")
+    parser.add_argument("--expire-days", type=int, default=None, help="Срок действия в днях (0 — бессрочно)")
+    parser.add_argument("--no-machine", action="store_true", help="Отключить привязку к машине")
+    parser.add_argument("--exclude", action="append", help="Дополнительные файлы/шаблоны для исключения")
+    parser.add_argument("--show-excluded", action="store_true", help="Показать список исключаемых файлов")
+    parser.add_argument("--interactive", action="store_true", help="Запросить параметры интерактивно")
+    parser.add_argument("--quick", action="store_true", help="Быстрый режим: сгенерировать ключ, без привязки, бессрочно")
 
     args = parser.parse_args()
 
-    # Показать список исключений
     if args.show_excluded:
         print("📁 Файлы, которые НЕ будут шифроваться:")
         for pattern in EXCLUDED_PATTERNS:
@@ -297,7 +246,16 @@ def main():
         'excludes': args.exclude or []
     }
 
-    # Интерактивный режим или выбор режима
+    # Если ключ указан, проверяем его на hex
+    if config['key'] is not None:
+        ok, msg = validate_key_hex(config['key'])
+        if not ok:
+            # Преобразуем в hex через sha256 (предупреждаем)
+            print(f"⚠️ Ключ не является hex-строкой. Преобразую через sha256...")
+            config['key'] = hashlib.sha256(config['key'].encode()).hexdigest()
+            print(f"   Новый hex-ключ: {config['key']}")
+
+    # Интерактивный режим
     if args.interactive:
         mode = choose_interactive_mode()
 
@@ -309,14 +267,7 @@ def main():
             print("✅ Без привязки к машине")
             print("✅ Бессрочный доступ")
 
-        elif mode == "2":  # Ручная настройка
-            config = interactive_advanced_config()
-            # Добавляем исключения из интерактивного режима
-            if config.get('excludes'):
-                for pattern in config['excludes']:
-                    add_exclusion(pattern)
-
-        elif mode == "3":  # Продвинутый
+        elif mode == "2" or mode == "3":
             config = interactive_advanced_config()
             if config.get('excludes'):
                 for pattern in config['excludes']:
@@ -380,6 +331,12 @@ def main():
         print(f"❌ Ошибка при копировании: {e}")
         return
 
+    # Сохраняем ключ в .key
+    key_file = os.path.join(copy_dir, '.key')
+    with open(key_file, 'w') as f:
+        f.write(config['key'])
+    print(f"🔑 Ключ сохранён в {key_file}")
+
     # Собираем .py файлы
     py_files = coll(copy_dir)
     print(f"📄 Найдено .py-файлов для обработки: {len(py_files)}")
@@ -409,7 +366,6 @@ def main():
             print(f"  ❌ Ошибка: {e}")
             error_count += 1
 
-    # Итоговый отчёт
     elapsed = datetime.now() - start_time
     print("\n" + "=" * 60)
     print("✅ ЗАВЕРШЕНО!")
@@ -420,11 +376,8 @@ def main():
     print(f"⏱️  Время выполнения: {elapsed.total_seconds():.1f} сек")
     print(f"📁 Результат: {copy_dir}")
     print(f"📂 Оригинал: {target} (не изменён)")
-
-    # Показываем информацию о ключе
-    print("\n🔑 Сохраните ключ для расшифровки:")
-    print(f"   {config['key']}")
-    print("   (без него файлы не запустятся!)")
+    print("\n🔑 Ключ сохранён в файле .key внутри зашифрованной директории.")
+    print("   Для запуска скриптов убедитесь, что файл .key находится в корне проекта.")
     print("=" * 60)
 
 
