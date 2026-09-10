@@ -331,8 +331,8 @@ def main():
         print(f"❌ Ошибка при копировании: {e}")
         return
 
-    # Сохраняем ключ в .key
-    key_file = os.path.join(copy_dir, '.key')
+    backend_dir = os.path.join(copy_dir, 'backend')
+    key_file = os.path.join(backend_dir, '.key')
     with open(key_file, 'w') as f:
         f.write(config['key'])
     print(f"🔑 Ключ сохранён в {key_file}")
@@ -377,7 +377,7 @@ def main():
     print(f"📁 Результат: {copy_dir}")
     print(f"📂 Оригинал: {target} (не изменён)")
     print("\n🔑 Ключ сохранён в файле .key внутри зашифрованной директории.")
-    print("   Для запуска скриптов убедитесь, что файл .key находится в корне проекта.")
+    print("   Для запуска скриптов убедитесь, что файл .key находится в backend проекта.")
     print("=" * 60)
 
 
